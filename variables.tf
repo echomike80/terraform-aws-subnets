@@ -38,10 +38,52 @@ variable "public_subnet_ipv6_prefixes" {
   default     = []
 }
 
+variable "database_subnet_ipv6_prefixes" {
+  description = "Assigns IPv6 database subnet id based on the Amazon provided /56 prefix base 10 integer (0-256). Must be of equal length to the corresponding IPv4 subnet list"
+  type        = list(string)
+  default     = []
+}
+
 variable "assign_ipv6_address_on_creation" {
   description = "Assign IPv6 address on subnet, must be disabled to change IPv6 CIDRs. This is the IPv6 equivalent of map_public_ip_on_launch"
   type        = bool
   default     = false
+}
+
+variable "create_database_subnet_group" {
+  description = "Controls if database subnet group should be created (n.b. database_subnets must also be set)"
+  type        = bool
+  default     = true
+}
+
+variable "database_subnet_group_name" {
+  description = "Name of database subnet group"
+  type        = string
+  default     = null
+}
+
+variable "database_subnet_group_tags" {
+  description = "Additional tags for the database subnet group"
+  type        = map(string)
+  default     = {}
+}
+
+variable "create_database_subnet_route_table" {
+  description = "Controls if separate route table for database should be created"
+  type        = bool
+  default     = false
+}
+
+variable "create_database_internet_gateway_route" {
+  description = "Controls if an internet gateway route for public database access should be created"
+  type        = bool
+  default     = false
+}
+
+variable "public_subnet_assign_ipv6_address_on_creation" {
+  description = "Assign IPv6 address on public subnet, must be disabled to change IPv6 CIDRs. This is the IPv6 equivalent of map_public_ip_on_launch"
+  type        = bool
+  default     = null
 }
 
 variable "private_subnet_assign_ipv6_address_on_creation" {
@@ -50,8 +92,8 @@ variable "private_subnet_assign_ipv6_address_on_creation" {
   default     = null
 }
 
-variable "public_subnet_assign_ipv6_address_on_creation" {
-  description = "Assign IPv6 address on public subnet, must be disabled to change IPv6 CIDRs. This is the IPv6 equivalent of map_public_ip_on_launch"
+variable "database_subnet_assign_ipv6_address_on_creation" {
+  description = "Assign IPv6 address on database subnet, must be disabled to change IPv6 CIDRs. This is the IPv6 equivalent of map_public_ip_on_launch"
   type        = bool
   default     = null
 }
@@ -68,6 +110,12 @@ variable "private_subnet_suffix" {
   default     = "private"
 }
 
+variable "database_subnet_suffix" {
+  description = "Suffix to append to database subnets name"
+  type        = string
+  default     = "db"
+}
+
 variable "public_subnets" {
   description = "A list of public subnets inside the VPC"
   type        = list(string)
@@ -80,10 +128,22 @@ variable "private_subnets" {
   default     = []
 }
 
+variable "database_subnets" {
+  description = "A list of database subnets"
+  type        = list(string)
+  default     = []
+}
+
 variable "azs" {
   description = "A list of availability zones in the region"
   type        = list(string)
   default     = []
+}
+
+variable "enable_private_route_table_without_nat_gateway" {
+  description = "Should be true if you want to provision a dedicated route table for each of your private networks without a NAT Gateway"
+  type        = bool
+  default     = false
 }
 
 variable "enable_nat_gateway" {
@@ -128,6 +188,12 @@ variable "private_subnet_tags" {
   default     = {}
 }
 
+variable "database_subnet_tags" {
+  description = "Additional tags for the database subnets"
+  type        = map(string)
+  default     = {}
+}
+
 variable "public_route_table_tags" {
   description = "Additional tags for the public route tables"
   type        = map(string)
@@ -138,4 +204,124 @@ variable "private_route_table_tags" {
   description = "Additional tags for the private route tables"
   type        = map(string)
   default     = {}
+}
+
+variable "database_route_table_tags" {
+  description = "Additional tags for the database route tables"
+  type        = map(string)
+  default     = {}
+}
+
+variable "public_acl_tags" {
+  description = "Additional tags for the public subnets network ACL"
+  type        = map(string)
+  default     = {}
+}
+
+variable "private_acl_tags" {
+  description = "Additional tags for the private subnets network ACL"
+  type        = map(string)
+  default     = {}
+}
+
+variable "database_acl_tags" {
+  description = "Additional tags for the database subnets network ACL"
+  type        = map(string)
+  default     = {}
+}
+
+variable "public_inbound_acl_rules" {
+  description = "Public subnets inbound network ACLs"
+  type        = list(map(string))
+
+  default = [
+    {
+      rule_number = 100
+      rule_action = "allow"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_block  = "0.0.0.0/0"
+    },
+  ]
+}
+
+variable "public_outbound_acl_rules" {
+  description = "Public subnets outbound network ACLs"
+  type        = list(map(string))
+
+  default = [
+    {
+      rule_number = 100
+      rule_action = "allow"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_block  = "0.0.0.0/0"
+    },
+  ]
+}
+
+variable "private_inbound_acl_rules" {
+  description = "Private subnets inbound network ACLs"
+  type        = list(map(string))
+
+  default = [
+    {
+      rule_number = 100
+      rule_action = "allow"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_block  = "0.0.0.0/0"
+    },
+  ]
+}
+
+variable "private_outbound_acl_rules" {
+  description = "Private subnets outbound network ACLs"
+  type        = list(map(string))
+
+  default = [
+    {
+      rule_number = 100
+      rule_action = "allow"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_block  = "0.0.0.0/0"
+    },
+  ]
+}
+
+variable "database_inbound_acl_rules" {
+  description = "Database subnets inbound network ACL rules"
+  type        = list(map(string))
+
+  default = [
+    {
+      rule_number = 100
+      rule_action = "allow"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_block  = "0.0.0.0/0"
+    },
+  ]
+}
+
+variable "database_outbound_acl_rules" {
+  description = "Database subnets outbound network ACL rules"
+  type        = list(map(string))
+
+  default = [
+    {
+      rule_number = 100
+      rule_action = "allow"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_block  = "0.0.0.0/0"
+    },
+  ]
 }
