@@ -149,8 +149,7 @@ No modules.
 | <a name="output_private_route_table_ids"></a> [private\_route\_table\_ids](#output\_private\_route\_table\_ids) | List of IDs of private route tables |
 | <a name="output_private_subnet_arns"></a> [private\_subnet\_arns](#output\_private\_subnet\_arns) | List of private subnet arns |
 | <a name="output_private_subnets"></a> [private\_subnets](#output\_private\_subnets) | List of private subnet ids |
-| <a name="output_private_without_nat_gateway_route_table_ids"></a> [private\_without\_nat\_gateway\_route\_table\_ids](#output\_private\_without\_nat\_gateway\_route\_table\_ids) | 
-List of IDs of private route tables without NAT Gateway |
+| <a name="output_private_without_nat_gateway_route_table_ids"></a> [private\_without\_nat\_gateway\_route\_table\_ids](#output\_private\_without\_nat\_gateway\_route\_table\_ids)| List of IDs of private route tables without NAT Gateway |
 | <a name="output_public_route_table_ids"></a> [public\_route\_table\_ids](#output\_public\_route\_table\_ids) | List of IDs of public route tables |
 | <a name="output_public_subnet_arns"></a> [public\_subnet\_arns](#output\_public\_subnet\_arns) | List of public subnet arns |
 | <a name="output_public_subnets"></a> [public\_subnets](#output\_public\_subnets) | List of public subnet ids |
