@@ -1,3 +1,9 @@
+variable "create_subnets" {
+  description = "Controls if subnets should be created (it affects almost all resources)"
+  type        = bool
+  default     = true
+}
+
 variable "name" {
   description = "Name to be used on all the resources as identifier"
   type        = string

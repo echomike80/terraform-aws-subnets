@@ -4,7 +4,7 @@
 # Public subnet
 ################
 resource "aws_subnet" "public" {
-  count = length(var.public_subnets) > 0 ? length(var.public_subnets) : 0
+  count = var.create_subnets && length(var.public_subnets) > 0 ? length(var.public_subnets) : 0
 
   vpc_id                          = var.vpc_id
   cidr_block                      = element(concat(var.public_subnets, [""]), count.index)
@@ -31,7 +31,7 @@ resource "aws_subnet" "public" {
 # Publiс routes
 ################
 resource "aws_route_table" "public" {
-  count = length(var.public_subnets)
+  count = var.create_subnets ? length(var.public_subnets) : 0
 
   vpc_id = var.vpc_id
 
@@ -45,7 +45,7 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route" "public_internet_gateway" {
-  count = length(var.public_subnets) > 0 ? 1 : 0
+  count = var.create_subnets && length(var.public_subnets) > 0 ? 1 : 0
 
   route_table_id         = aws_route_table.public[0].id
   destination_cidr_block = "0.0.0.0/0"
@@ -57,7 +57,7 @@ resource "aws_route" "public_internet_gateway" {
 }
 
 resource "aws_route" "public_internet_gateway_ipv6" {
-  count = var.enable_ipv6 && length(var.public_subnets) > 0 ? 1 : 0
+  count = var.create_subnets && var.enable_ipv6 && length(var.public_subnets) > 0 ? 1 : 0
 
   route_table_id              = aws_route_table.public[0].id
   destination_ipv6_cidr_block = "::/0"
@@ -68,7 +68,7 @@ resource "aws_route" "public_internet_gateway_ipv6" {
 # Public Route table association
 ################################
 resource "aws_route_table_association" "public" {
-  count = length(var.public_subnets) > 0 ? length(var.public_subnets) : 0
+  count = var.create_subnets && length(var.public_subnets) > 0 ? length(var.public_subnets) : 0
 
   subnet_id      = element(aws_subnet.public.*.id, count.index)
   route_table_id = aws_route_table.public[0].id
@@ -78,7 +78,7 @@ resource "aws_route_table_association" "public" {
 # Public Network ACLs
 #####################
 resource "aws_network_acl" "public" {
-  count = length(var.public_subnets) > 0 ? 1 : 0
+  count = var.create_subnets && length(var.public_subnets) > 0 ? 1 : 0
 
   vpc_id     = var.vpc_id
   subnet_ids = aws_subnet.public.*.id
@@ -93,7 +93,7 @@ resource "aws_network_acl" "public" {
 }
 
 resource "aws_network_acl_rule" "public_inbound" {
-  count = length(var.public_subnets) > 0 ? length(var.public_inbound_acl_rules) : 0
+  count = var.create_subnets && length(var.public_subnets) > 0 ? length(var.public_inbound_acl_rules) : 0
 
   network_acl_id = aws_network_acl.public[0].id
 
@@ -110,7 +110,7 @@ resource "aws_network_acl_rule" "public_inbound" {
 }
 
 resource "aws_network_acl_rule" "public_outbound" {
-  count = length(var.public_subnets) > 0 ? length(var.public_outbound_acl_rules) : 0
+  count = var.create_subnets && length(var.public_subnets) > 0 ? length(var.public_outbound_acl_rules) : 0
 
   network_acl_id = aws_network_acl.public[0].id
 
@@ -130,7 +130,7 @@ resource "aws_network_acl_rule" "public_outbound" {
 # Private subnet
 #################
 resource "aws_subnet" "private" {
-  count = length(var.private_subnets) > 0 ? length(var.private_subnets) : 0
+  count = var.create_subnets && length(var.private_subnets) > 0 ? length(var.private_subnets) : 0
 
   vpc_id                          = var.vpc_id
   cidr_block                      = var.private_subnets[count.index]
@@ -158,7 +158,7 @@ resource "aws_subnet" "private" {
 # There are as many routing tables as the number of NAT gateways
 #################
 resource "aws_route_table" "private" {
-  count = (var.enable_nat_gateway && var.enable_private_route_table_without_nat_gateway == false) && length(var.private_subnets) > 0 ? length(var.nat_gateway_ids) : 0
+  count = var.create_subnets && (var.enable_nat_gateway && var.enable_private_route_table_without_nat_gateway == false) && length(var.private_subnets) > 0 ? length(var.nat_gateway_ids) : 0
 
   vpc_id = var.vpc_id
 
@@ -182,7 +182,7 @@ resource "aws_route_table" "private" {
 }
 
 resource "aws_route_table" "private_without_nat_gateway" {
-  count = (var.enable_nat_gateway == false && var.enable_private_route_table_without_nat_gateway) && length(var.private_subnets) > 0 ? length(var.private_subnets) : 0
+  count = var.create_subnets && (var.enable_nat_gateway == false && var.enable_private_route_table_without_nat_gateway) && length(var.private_subnets) > 0 ? length(var.private_subnets) : 0
 
   vpc_id = var.vpc_id
 
@@ -206,7 +206,7 @@ resource "aws_route_table" "private_without_nat_gateway" {
 }
 
 resource "aws_route" "private_nat_gateway" {
-  count = (var.enable_nat_gateway && var.enable_private_route_table_without_nat_gateway == false) && length(var.private_subnets) > 0 ? length(var.nat_gateway_ids) : 0
+  count = var.create_subnets && (var.enable_nat_gateway && var.enable_private_route_table_without_nat_gateway == false) && length(var.private_subnets) > 0 ? length(var.nat_gateway_ids) : 0
 
   route_table_id         = element(aws_route_table.private.*.id, count.index)
   destination_cidr_block = "0.0.0.0/0"
@@ -221,7 +221,7 @@ resource "aws_route" "private_nat_gateway" {
 # Private Route table association
 #################################
 resource "aws_route_table_association" "private" {
-  count = (var.enable_nat_gateway && var.enable_private_route_table_without_nat_gateway == false) && length(var.private_subnets) > 0 ? length(var.private_subnets) : 0
+  count = var.create_subnets && (var.enable_nat_gateway && var.enable_private_route_table_without_nat_gateway == false) && length(var.private_subnets) > 0 ? length(var.private_subnets) : 0
 
   subnet_id = element(aws_subnet.private.*.id, count.index)
   route_table_id = element(
@@ -231,7 +231,7 @@ resource "aws_route_table_association" "private" {
 }
 
 resource "aws_route_table_association" "private_without_nat_gateway" {
-  count = (var.enable_nat_gateway == false && var.enable_private_route_table_without_nat_gateway) && length(var.private_subnets) > 0 ? length(var.private_subnets) : 0
+  count = var.create_subnets && (var.enable_nat_gateway == false && var.enable_private_route_table_without_nat_gateway) && length(var.private_subnets) > 0 ? length(var.private_subnets) : 0
 
   subnet_id = element(aws_subnet.private.*.id, count.index)
   route_table_id = element(
@@ -244,7 +244,7 @@ resource "aws_route_table_association" "private_without_nat_gateway" {
 # Private Network ACLs
 ######################
 resource "aws_network_acl" "private" {
-  count = length(var.private_subnets) > 0 ? 1 : 0
+  count = var.create_subnets && length(var.private_subnets) > 0 ? 1 : 0
 
   vpc_id     = var.vpc_id
   subnet_ids = aws_subnet.private.*.id
@@ -259,7 +259,7 @@ resource "aws_network_acl" "private" {
 }
 
 resource "aws_network_acl_rule" "private_inbound" {
-  count = length(var.private_subnets) > 0 ? length(var.private_inbound_acl_rules) : 0
+  count = var.create_subnets && length(var.private_subnets) > 0 ? length(var.private_inbound_acl_rules) : 0
 
   network_acl_id = aws_network_acl.private[0].id
 
@@ -276,7 +276,7 @@ resource "aws_network_acl_rule" "private_inbound" {
 }
 
 resource "aws_network_acl_rule" "private_outbound" {
-  count = length(var.private_subnets) > 0 ? length(var.private_outbound_acl_rules) : 0
+  count = var.create_subnets && length(var.private_subnets) > 0 ? length(var.private_outbound_acl_rules) : 0
 
   network_acl_id = aws_network_acl.private[0].id
 
@@ -296,7 +296,7 @@ resource "aws_network_acl_rule" "private_outbound" {
 # Database subnet
 #################
 resource "aws_subnet" "database" {
-  count = length(var.database_subnets) > 0 ? length(var.database_subnets) : 0
+  count = var.create_subnets && length(var.database_subnets) > 0 ? length(var.database_subnets) : 0
 
   vpc_id                          = var.vpc_id
   cidr_block                      = var.database_subnets[count.index]
@@ -320,7 +320,7 @@ resource "aws_subnet" "database" {
 }
 
 resource "aws_db_subnet_group" "database" {
-  count = length(var.database_subnets) > 0 && var.create_database_subnet_group ? 1 : 0
+  count = var.create_subnets && length(var.database_subnets) > 0 && var.create_database_subnet_group ? 1 : 0
 
   name        = lower(coalesce(var.database_subnet_group_name, format("%s-%s", var.name, var.database_subnet_suffix)))
   description = "Database subnet group for ${var.name}"
@@ -339,7 +339,7 @@ resource "aws_db_subnet_group" "database" {
 # Database routes
 #################
 resource "aws_route_table" "database" {
-  count = length(var.database_subnets) > 0 ? var.create_database_internet_gateway_route ? 1 : length(var.database_subnets) : 0
+  count = var.create_subnets && length(var.database_subnets) > 0 ? var.create_database_internet_gateway_route ? 1 : length(var.database_subnets) : 0
 
   vpc_id = var.vpc_id
 
@@ -360,7 +360,7 @@ resource "aws_route_table" "database" {
 # Database Route table association
 ##################################
 resource "aws_route_table_association" "database" {
-  count = length(var.database_subnets) > 0 ? length(var.database_subnets) : 0
+  count = var.create_subnets && length(var.database_subnets) > 0 ? length(var.database_subnets) : 0
 
   subnet_id = element(aws_subnet.database.*.id, count.index)
   route_table_id = element(aws_route_table.database.*.id, count.index)
@@ -370,7 +370,7 @@ resource "aws_route_table_association" "database" {
 # Database Network ACLs
 #######################
 resource "aws_network_acl" "database" {
-  count = length(var.database_subnets) > 0 ? 1 : 0
+  count = var.create_subnets && length(var.database_subnets) > 0 ? 1 : 0
 
   vpc_id     = var.vpc_id
   subnet_ids = aws_subnet.database.*.id
@@ -385,7 +385,7 @@ resource "aws_network_acl" "database" {
 }
 
 resource "aws_network_acl_rule" "database_inbound" {
-  count = length(var.database_subnets) > 0 ? length(var.database_inbound_acl_rules) : 0
+  count = var.create_subnets && length(var.database_subnets) > 0 ? length(var.database_inbound_acl_rules) : 0
 
   network_acl_id = aws_network_acl.database[0].id
 
@@ -402,7 +402,7 @@ resource "aws_network_acl_rule" "database_inbound" {
 }
 
 resource "aws_network_acl_rule" "database_outbound" {
-  count = length(var.database_subnets) > 0 ? length(var.database_outbound_acl_rules) : 0
+  count = var.create_subnets && length(var.database_subnets) > 0 ? length(var.database_outbound_acl_rules) : 0
 
   network_acl_id = aws_network_acl.database[0].id
 
